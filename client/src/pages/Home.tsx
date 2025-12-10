@@ -32,13 +32,13 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-primary/10 via-background to-background border-b">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
           <div className="text-center space-y-6">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground tracking-tight">
               Save Lives Through <span className="text-primary">Blood Donation</span>
             </h1>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto">
-              Join PIEAS Blood Chapter - connecting donors with those in need. 
+              Join PIEAS Blood Chapter - connecting donors with those in need.
               Every drop counts in our mission to save lives.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
@@ -94,9 +94,9 @@ export default function Home() {
       </section>
 
       {/* Blood Availability Section */}
-      <section className="py-16 bg-background">
+      <section className="py-12 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
+          <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-foreground mb-4">Blood Availability</h2>
             <p className="text-muted-foreground">Live status of available blood groups</p>
           </div>
@@ -128,9 +128,9 @@ export default function Home() {
       </section>
 
       {/* Active Requests Section */}
-      <section className="py-16 bg-muted/30">
+      <section className="py-12 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
+          <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-foreground mb-4">Urgent Blood Requests</h2>
             <p className="text-muted-foreground">People who need your help right now</p>
           </div>

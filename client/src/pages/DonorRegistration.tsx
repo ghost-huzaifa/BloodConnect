@@ -63,7 +63,7 @@ export default function DonorRegistration() {
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 pt-20">
         <Card className="max-w-md w-full">
           <CardContent className="pt-12 pb-12 text-center space-y-6">
             <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
@@ -90,7 +90,7 @@ export default function DonorRegistration() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pt-8">
       {/* Header */}
       <header className="border-b bg-card sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">

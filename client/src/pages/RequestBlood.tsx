@@ -69,7 +69,7 @@ export default function RequestBlood() {
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 pt-20">
         <Card className="max-w-md w-full">
           <CardContent className="pt-12 pb-12 text-center space-y-6">
             <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
@@ -96,7 +96,7 @@ export default function RequestBlood() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pt-8">
       {/* Header */}
       <header className="border-b bg-card sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -124,7 +124,7 @@ export default function RequestBlood() {
                 {/* Patient Information */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-foreground">Patient Information</h3>
-                  
+
                   <FormField
                     control={form.control}
                     name="patientName"
@@ -219,7 +219,7 @@ export default function RequestBlood() {
                 {/* Hospital Information */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-foreground">Hospital Information</h3>
-                  
+
                   <FormField
                     control={form.control}
                     name="hospitalName"
@@ -253,7 +253,7 @@ export default function RequestBlood() {
                 {/* Contact Information */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-foreground">Contact Information</h3>
-                  
+
                   <FormField
                     control={form.control}
                     name="contactPerson"
@@ -326,8 +326,8 @@ export default function RequestBlood() {
                     <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-amber-800 dark:text-amber-300">
                       <p className="font-medium mb-1">Important Notice</p>
-                      <p>Your request will be reviewed by our admin team before notifying donors. 
-                      This ensures all requests are legitimate and helps maintain trust in our community.</p>
+                      <p>Your request will be reviewed by our admin team before notifying donors.
+                        This ensures all requests are legitimate and helps maintain trust in our community.</p>
                     </div>
                   </div>
                 </div>

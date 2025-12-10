@@ -7,6 +7,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { AuthProvider } from "@/lib/auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { Navbar } from "@/components/Navbar";
 import Home from "@/pages/Home";
 import DonorRegistration from "@/pages/DonorRegistration";
 import RequestBlood from "@/pages/RequestBlood";
@@ -21,12 +22,15 @@ import NotFound from "@/pages/not-found";
 
 function PublicRouter() {
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/register-donor" component={DonorRegistration} />
-      <Route path="/request-blood" component={RequestBlood} />
-      <Route component={NotFound} />
-    </Switch>
+    <>
+      <Navbar />
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/register-donor" component={DonorRegistration} />
+        <Route path="/request-blood" component={RequestBlood} />
+        <Route component={NotFound} />
+      </Switch>
+    </>
   );
 }
 
