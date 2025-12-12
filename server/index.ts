@@ -80,7 +80,7 @@ app.use((req, res, next) => {
     {
       port,
       host: "0.0.0.0",
-      reusePort: true,
+      // reusePort: true, window and node 22 does not support it yet
     },
     () => {
       log(`serving on port ${port}`);

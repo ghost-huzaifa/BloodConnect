@@ -47,7 +47,7 @@ export default function Login() {
             if (data.user.role === "admin") {
                 setLocation("/admin");
             } else {
-                setLocation("/");
+                setLocation("/home");
             }
         },
         onError: (error: Error) => {

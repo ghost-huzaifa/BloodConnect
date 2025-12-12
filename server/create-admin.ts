@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { db } from "./db";
+import { eq } from "drizzle-orm";
 import { users } from "@shared/schema";
 import bcrypt from "bcrypt";
 
@@ -13,7 +14,7 @@ async function createAdminUser() {
     const existingAdmin = await db
       .select()
       .from(users)
-      .where((u: any) => u.email === email);
+      .where((u) => eq(u.email, email));
 
     if (existingAdmin.length > 0) {
       console.log("Admin user already exists!");
