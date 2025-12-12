@@ -22,7 +22,8 @@ import NotFound from "@/pages/not-found";
 function PublicRouter() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/home" component={Home} />
+      {/* <Route path="/" component={Home} /> */}
       <Route path="/register-donor" component={DonorRegistration} />
       <Route path="/request-blood" component={RequestBlood} />
       <Route component={NotFound} />
@@ -70,6 +71,7 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/" component={Login} />
       <Route path="/admin/:rest*">
         {() => <AdminRouter />}
       </Route>
