@@ -10,10 +10,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Droplet, AlertCircle } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 
 export default function Login() {
     const [, setLocation] = useLocation();
     const [error, setError] = useState<string>("");
+    const { login } = useAuth();
 
     const form = useForm<LoginCredentials>({
         resolver: zodResolver(loginSchema),
@@ -40,8 +42,8 @@ export default function Login() {
             return response.json();
         },
         onSuccess: (data) => {
-            // Store user info in localStorage
-            localStorage.setItem("user", JSON.stringify(data.user));
+            // Update auth context and localStorage
+            login(data.user);
 
             // Redirect based on role
             if (data.user.role === "admin") {

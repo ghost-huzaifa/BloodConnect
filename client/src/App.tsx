@@ -3,10 +3,10 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AdminSidebar } from "@/components/AdminSidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/lib/auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { Navbar } from "@/components/Navbar";
 import Home from "@/pages/Home";
 import DonorRegistration from "@/pages/DonorRegistration";
 import RequestBlood from "@/pages/RequestBlood";
@@ -19,14 +19,20 @@ import RequestManager from "@/pages/RequestManager";
 import CaseLog from "@/pages/CaseLog";
 import NotFound from "@/pages/not-found";
 
+// Wrapper components for routes so we don't pass router props to dialog variants
+const DonorRegistrationPage = () => <DonorRegistration />;
+const RequestBloodPage = () => <RequestBlood />;
+
 function PublicRouter() {
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/register-donor" component={DonorRegistration} />
-      <Route path="/request-blood" component={RequestBlood} />
-      <Route component={NotFound} />
-    </Switch>
+    <>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/register-donor" component={DonorRegistrationPage} />
+        <Route path="/request-blood" component={RequestBloodPage} />
+        <Route component={NotFound} />
+      </Switch>
+    </>
   );
 }
 
@@ -39,27 +45,18 @@ function AdminRouter() {
   return (
     <ProtectedRoute allowedRoles={["admin"]}>
       <SidebarProvider style={style as React.CSSProperties}>
-        <div className="flex h-screen w-full">
-          <AdminSidebar />
-          <div className="flex flex-col flex-1 overflow-hidden">
-            <header className="flex items-center justify-between p-4 border-b bg-card">
-              <SidebarTrigger data-testid="button-sidebar-toggle" />
-              <h2 className="text-lg font-semibold text-foreground">PIEAS Blood Chapter Admin</h2>
-            </header>
-            <main className="flex-1 overflow-auto bg-background">
-              <Switch>
-                <Route path="/admin" component={AdminDashboard} />
-                <Route path="/admin/" component={AdminDashboard} />
-                <Route path="/admin/panel" component={AdminPanel} />
-                <Route path="/admin/donors" component={DonorTracker} />
-                <Route path="/admin/requests" component={RequestManager} />
-                <Route path="/admin/case-log" component={CaseLog} />
-                <Route path="/admin/stats" component={AdminDashboard} />
-                <Route path="/admin/:rest*" component={NotFound} />
-              </Switch>
-            </main>
-          </div>
-        </div>
+        <main className="min-h-screen bg-background">
+          <Switch>
+            <Route path="/admin" component={AdminDashboard} />
+            <Route path="/admin/" component={AdminDashboard} />
+            <Route path="/admin/panel" component={AdminPanel} />
+            <Route path="/admin/donors" component={DonorTracker} />
+            <Route path="/admin/requests" component={RequestManager} />
+            <Route path="/admin/case-log" component={CaseLog} />
+            <Route path="/admin/stats" component={AdminDashboard} />
+            <Route path="/admin/:rest*" component={NotFound} />
+          </Switch>
+        </main>
       </SidebarProvider>
     </ProtectedRoute>
   );
@@ -67,19 +64,22 @@ function AdminRouter() {
 
 function Router() {
   return (
-    <Switch>
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-      <Route path="/admin/:rest*">
-        {() => <AdminRouter />}
-      </Route>
-      <Route path="/admin">
-        {() => <AdminRouter />}
-      </Route>
-      <Route>
-        {() => <PublicRouter />}
-      </Route>
-    </Switch>
+    <>
+      <Navbar />
+      <Switch>
+        <Route path="/login" component={Login} />
+        <Route path="/register" component={Register} />
+        <Route path="/admin/:rest*">
+          {() => <AdminRouter />}
+        </Route>
+        <Route path="/admin">
+          {() => <AdminRouter />}
+        </Route>
+        <Route>
+          {() => <PublicRouter />}
+        </Route>
+      </Switch>
+    </>
   );
 }
 

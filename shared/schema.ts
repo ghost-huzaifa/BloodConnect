@@ -169,6 +169,12 @@ export const insertDonorSchema = createInsertSchema(donors)
     email: z.string().email("Please enter a valid email address"),
     phone: z.string().min(10, "Please enter a valid phone number"),
     whatsappNumber: z.string().optional(),
+    lastDonationDate: z
+      .preprocess((val) => {
+        if (val === null || val === undefined || val === "") return undefined;
+        if (typeof val === "string") return new Date(val);
+        return val;
+      }, z.date().optional()),
   });
 
 export const insertBloodRequestSchema = createInsertSchema(bloodRequests)

@@ -16,10 +16,31 @@ import { apiRequest } from "@/lib/queryClient";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
-export default function DonorRegistration() {
+interface DonorRegistrationProps {
+  variant?: "page" | "dialog";
+}
+
+export default function DonorRegistration({ variant = "page" }: DonorRegistrationProps) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [isSuccess, setIsSuccess] = useState(false);
+  const [phoneCode, setPhoneCode] = useState("+92");
+  const [whatsappCode, setWhatsappCode] = useState("+92");
+
+  const validateLocalPhone = (code: string, local: string) => {
+    const digits = (local || "").replace(/\D/g, "");
+    if (!digits) return "Phone number is required";
+    switch (code) {
+      case "+92":
+        return digits.length === 10 || digits.length === 11 || "Enter a valid Pakistani number";
+      case "+91":
+        return digits.length === 10 || "Enter a valid Indian number";
+      case "+1":
+        return digits.length === 10 || "Enter a valid US number";
+      default:
+        return digits.length >= 7 || "Enter a valid phone number";
+    }
+  };
 
   const form = useForm<InsertDonor>({
     resolver: zodResolver(insertDonorSchema),
@@ -57,54 +78,83 @@ export default function DonorRegistration() {
   });
 
   const onSubmit = (data: InsertDonor) => {
-    console.log(data)
+    const phoneDigits = (data.phone || "").replace(/\D/g, "");
+    data.phone = phoneDigits ? `${phoneCode} ${phoneDigits}` : data.phone;
+
+    if (data.whatsappNumber) {
+      const whatsappDigits = data.whatsappNumber.replace(/\D/g, "");
+      data.whatsappNumber = whatsappDigits ? `${whatsappCode} ${whatsappDigits}` : data.whatsappNumber;
+    }
+
     registerMutation.mutate(data);
   };
 
   if (isSuccess) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-12 pb-12 text-center space-y-6">
-            <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-12 h-12 text-green-600 dark:text-green-400" />
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-foreground">Registration Submitted!</h2>
-              <p className="text-muted-foreground">
-                Thank you for registering as a blood donor. Your application is pending admin approval.
-                We'll contact you once your registration is approved.
-              </p>
-            </div>
-            <div className="pt-4 space-y-3">
+    const content = (
+      <Card className="max-w-md w-full">
+        <CardContent className="pt-12 pb-12 text-center space-y-6">
+          <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-12 h-12 text-green-600 dark:text-green-400" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-foreground">Registration Submitted!</h2>
+            <p className="text-muted-foreground">
+              Thank you for registering as a blood donor. Your application is pending admin approval.
+              We'll contact you once your registration is approved.
+            </p>
+          </div>
+          <div className="pt-4 space-y-3">
+            {variant === "dialog" ? (
+              <Button
+                className="w-full"
+                data-testid="button-close-dialog"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent("close-register-donor"));
+                }}
+              >
+                Close
+              </Button>
+            ) : (
               <Link href="/">
                 <Button className="w-full" data-testid="button-back-home">
                   Back to Home
                 </Button>
               </Link>
-            </div>
-          </CardContent>
-        </Card>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+
+    if (variant === "dialog") {
+      return <div className="flex items-center justify-center p-2">{content}</div>;
+    }
+
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 pt-20">
+        {content}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link href="/">
-            <Button variant="ghost" size="sm" data-testid="button-back">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Home
-            </Button>
-          </Link>
-        </div>
-      </header>
+    <div className={variant === "dialog" ? "" : "min-h-screen bg-background pt-8"}>
+      {/* Header only in full page mode */}
+      {variant === "page" && (
+        <header className="border-b bg-card sticky top-0 z-10">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <Link href="/">
+              <Button variant="ghost" size="sm" data-testid="button-back">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
+              </Button>
+            </Link>
+          </div>
+        </header>
+      )}
 
       {/* Form Section */}
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className={variant === "dialog" ? "max-w-2xl mx-auto" : "max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12"}>
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">Register as Blood Donor</CardTitle>
@@ -147,11 +197,31 @@ export default function DonorRegistration() {
                   <FormField
                     control={form.control}
                     name="phone"
+                    rules={{
+                      validate: (value: string | undefined) => validateLocalPhone(phoneCode, value || ""),
+                    }}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Phone Number *</FormLabel>
                         <FormControl>
-                          <Input placeholder="+92 300 1234567" {...field} data-testid="input-phone" />
+                          <div className="flex gap-2">
+                            <Select value={phoneCode} onValueChange={setPhoneCode}>
+                              <SelectTrigger className="w-28">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="+92" className="text-foreground">+92</SelectItem>
+                                <SelectItem value="+91" className="text-foreground">+91</SelectItem>
+                                <SelectItem value="+1" className="text-foreground">+1</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              placeholder="300 1234567"
+                              {...field}
+                              value={field.value || ""}
+                              data-testid="input-phone"
+                            />
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -174,7 +244,11 @@ export default function DonorRegistration() {
                           </FormControl>
                           <SelectContent>
                             {BLOOD_GROUPS.map((group) => (
-                              <SelectItem key={group} value={group}>
+                              <SelectItem
+                                key={group}
+                                value={group}
+                                className="text-foreground"
+                              >
                                 {group}
                               </SelectItem>
                             ))}
@@ -208,7 +282,12 @@ export default function DonorRegistration() {
                       <FormItem>
                         <FormLabel>Batch (Optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., 2024" {...field} data-testid="input-batch" />
+                          <Input
+                            placeholder="e.g., 2024"
+                            {...field}
+                            value={field.value ?? ""}
+                            data-testid="input-batch"
+                          />
                         </FormControl>
                         <FormDescription>Your graduation year or batch</FormDescription>
                         <FormMessage />
@@ -219,11 +298,37 @@ export default function DonorRegistration() {
                   <FormField
                     control={form.control}
                     name="whatsappNumber"
+                    rules={{
+                      validate: (value) => {
+                        const val = value as string | undefined;
+                        if (!val) return true;
+                        const digits = val.replace(/\D/g, "");
+                        if (!digits) return true;
+                        return validateLocalPhone(whatsappCode, val as string);
+                      },
+                    }}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>WhatsApp Number (Optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="+92 300 1234567" {...field} data-testid="input-whatsapp" />
+                          <div className="flex gap-2">
+                            <Select value={whatsappCode} onValueChange={setWhatsappCode}>
+                              <SelectTrigger className="w-28">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="+92" className="text-foreground">+92</SelectItem>
+                                <SelectItem value="+91" className="text-foreground">+91</SelectItem>
+                                <SelectItem value="+1" className="text-foreground">+1</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              placeholder="300 1234567"
+                              {...field}
+                              value={field.value || ""}
+                              data-testid="input-whatsapp"
+                            />
+                          </div>
                         </FormControl>
                         <FormDescription>For quick contact</FormDescription>
                         <FormMessage />

@@ -21,9 +21,30 @@ const URGENCY_LEVELS = [
   { value: "emergency", label: "Emergency (Immediate)", description: "Critical - blood needed immediately" },
 ];
 
-export default function RequestBlood() {
+interface RequestBloodProps {
+  variant?: "page" | "dialog";
+}
+
+export default function RequestBlood({ variant = "page" }: RequestBloodProps) {
   const { toast } = useToast();
   const [isSuccess, setIsSuccess] = useState(false);
+  const [contactPhoneCode, setContactPhoneCode] = useState("+92");
+  const [contactWhatsappCode, setContactWhatsappCode] = useState("+92");
+
+  const validateLocalPhone = (code: string, local: string) => {
+    const digits = (local || "").replace(/\D/g, "");
+    if (!digits) return "Phone number is required";
+    switch (code) {
+      case "+92":
+        return digits.length === 10 || digits.length === 11 || "Enter a valid Pakistani number";
+      case "+91":
+        return digits.length === 10 || "Enter a valid Indian number";
+      case "+1":
+        return digits.length === 10 || "Enter a valid US number";
+      default:
+        return digits.length >= 7 || "Enter a valid phone number";
+    }
+  };
 
   const form = useForm<InsertBloodRequest>({
     resolver: zodResolver(insertBloodRequestSchema),
@@ -64,13 +85,20 @@ export default function RequestBlood() {
   });
 
   const onSubmit = (data: InsertBloodRequest) => {
+    const phoneDigits = (data.contactPhone || "").replace(/\D/g, "");
+    data.contactPhone = phoneDigits ? `${contactPhoneCode} ${phoneDigits}` : data.contactPhone;
+
+    if (data.contactWhatsapp) {
+      const whatsappDigits = data.contactWhatsapp.replace(/\D/g, "");
+      data.contactWhatsapp = whatsappDigits ? `${contactWhatsappCode} ${whatsappDigits}` : data.contactWhatsapp;
+    }
+
     requestMutation.mutate(data);
   };
 
   if (isSuccess) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
+    const content = (
+      <Card className="max-w-md w-full">
           <CardContent className="pt-12 pb-12 text-center space-y-6">
             <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-12 h-12 text-green-600 dark:text-green-400" />
@@ -83,34 +111,57 @@ export default function RequestBlood() {
               </p>
             </div>
             <div className="pt-4 space-y-3">
-              <Link href="/">
-                <Button className="w-full" data-testid="button-back-home">
-                  Back to Home
+              {variant === "dialog" ? (
+                <Button
+                  className="w-full"
+                  data-testid="button-close-dialog"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent("close-request-blood"));
+                  }}
+                >
+                  Close
                 </Button>
-              </Link>
+              ) : (
+                <Link href="/">
+                  <Button className="w-full" data-testid="button-back-home">
+                    Back to Home
+                  </Button>
+                </Link>
+              )}
             </div>
           </CardContent>
         </Card>
+    );
+
+    if (variant === "dialog") {
+      return <div className="flex items-center justify-center p-2">{content}</div>;
+    }
+
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 pt-20">
+        {content}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={variant === "dialog" ? "" : "min-h-screen bg-background pt-8"}>
       {/* Header */}
-      <header className="border-b bg-card sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link href="/">
-            <Button variant="ghost" size="sm" data-testid="button-back">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Home
-            </Button>
-          </Link>
-        </div>
-      </header>
+      {variant === "page" && (
+        <header className="border-b bg-card sticky top-0 z-10">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <Link href="/">
+              <Button variant="ghost" size="sm" data-testid="button-back">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
+              </Button>
+            </Link>
+          </div>
+        </header>
+      )}
 
       {/* Form Section */}
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className={variant === "dialog" ? "max-w-2xl mx-auto" : "max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12"}>
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">Request Blood</CardTitle>
@@ -124,7 +175,7 @@ export default function RequestBlood() {
                 {/* Patient Information */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-foreground">Patient Information</h3>
-                  
+
                   <FormField
                     control={form.control}
                     name="patientName"
@@ -154,7 +205,11 @@ export default function RequestBlood() {
                             </FormControl>
                             <SelectContent>
                               {BLOOD_GROUPS.map((group) => (
-                                <SelectItem key={group} value={group}>
+                                <SelectItem
+                                  key={group}
+                                  value={group}
+                                  className="text-foreground"
+                                >
                                   {group}
                                 </SelectItem>
                               ))}
@@ -201,7 +256,11 @@ export default function RequestBlood() {
                           </FormControl>
                           <SelectContent>
                             {URGENCY_LEVELS.map((level) => (
-                              <SelectItem key={level.value} value={level.value}>
+                              <SelectItem
+                                key={level.value}
+                                value={level.value}
+                                className="text-foreground"
+                              >
                                 <div>
                                   <div className="font-medium">{level.label}</div>
                                   <div className="text-xs text-muted-foreground">{level.description}</div>
@@ -219,7 +278,7 @@ export default function RequestBlood() {
                 {/* Hospital Information */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-foreground">Hospital Information</h3>
-                  
+
                   <FormField
                     control={form.control}
                     name="hospitalName"
@@ -253,7 +312,7 @@ export default function RequestBlood() {
                 {/* Contact Information */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-foreground">Contact Information</h3>
-                  
+
                   <FormField
                     control={form.control}
                     name="contactPerson"
@@ -272,11 +331,31 @@ export default function RequestBlood() {
                     <FormField
                       control={form.control}
                       name="contactPhone"
+                      rules={{
+                        validate: (value: string | undefined) => validateLocalPhone(contactPhoneCode, value || ""),
+                      }}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Contact Phone *</FormLabel>
                           <FormControl>
-                            <Input placeholder="+92 300 1234567" {...field} data-testid="input-contact-phone" />
+                            <div className="flex gap-2">
+                              <Select value={contactPhoneCode} onValueChange={setContactPhoneCode}>
+                                <SelectTrigger className="w-28">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="+92" className="text-foreground">+92</SelectItem>
+                                  <SelectItem value="+91" className="text-foreground">+91</SelectItem>
+                                  <SelectItem value="+1" className="text-foreground">+1</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Input
+                                placeholder="300 1234567"
+                                {...field}
+                                value={field.value || ""}
+                                data-testid="input-contact-phone"
+                              />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -286,11 +365,36 @@ export default function RequestBlood() {
                     <FormField
                       control={form.control}
                       name="contactWhatsapp"
+                      rules={{
+                        validate: (value: string | undefined) => {
+                          if (!value) return true; // optional
+                          const digits = value.replace(/\D/g, "");
+                          if (!digits) return true; // treat as empty
+                          return validateLocalPhone(contactWhatsappCode, value);
+                        },
+                      }}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>WhatsApp (Optional)</FormLabel>
                           <FormControl>
-                            <Input placeholder="+92 300 1234567" {...field} data-testid="input-contact-whatsapp" />
+                            <div className="flex gap-2">
+                              <Select value={contactWhatsappCode} onValueChange={setContactWhatsappCode}>
+                                <SelectTrigger className="w-28">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="+92" className="text-foreground">+92</SelectItem>
+                                  <SelectItem value="+91" className="text-foreground">+91</SelectItem>
+                                  <SelectItem value="+1" className="text-foreground">+1</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Input
+                                placeholder="300 1234567"
+                                {...field}
+                                value={field.value || ""}
+                                data-testid="input-contact-whatsapp"
+                              />
+                            </div>
                           </FormControl>
                           <FormDescription>For quick contact</FormDescription>
                           <FormMessage />
@@ -313,6 +417,7 @@ export default function RequestBlood() {
                           className="resize-none"
                           rows={4}
                           {...field}
+                          value={field.value ?? ""}
                           data-testid="input-remarks"
                         />
                       </FormControl>
@@ -326,8 +431,8 @@ export default function RequestBlood() {
                     <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-amber-800 dark:text-amber-300">
                       <p className="font-medium mb-1">Important Notice</p>
-                      <p>Your request will be reviewed by our admin team before notifying donors. 
-                      This ensures all requests are legitimate and helps maintain trust in our community.</p>
+                      <p>Your request will be reviewed by our admin team before notifying donors.
+                        This ensures all requests are legitimate and helps maintain trust in our community.</p>
                     </div>
                   </div>
                 </div>

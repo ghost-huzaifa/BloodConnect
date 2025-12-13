@@ -15,6 +15,22 @@ import { Droplet, AlertCircle } from "lucide-react";
 export default function Register() {
     const [, setLocation] = useLocation();
     const [error, setError] = useState<string>("");
+    const [phoneCode, setPhoneCode] = useState("+92");
+
+    const validateLocalPhone = (code: string, local: string) => {
+        const digits = (local || "").replace(/\D/g, "");
+        if (!digits) return true; // optional field
+        switch (code) {
+            case "+92":
+                return digits.length === 10 || "Enter a valid Pakistani number";
+            case "+91":
+                return digits.length === 10 || "Enter a valid Indian number";
+            case "+1":
+                return digits.length === 10 || "Enter a valid US number";
+            default:
+                return digits.length >= 7 || "Enter a valid phone number";
+        }
+    };
 
     const form = useForm<InsertUser>({
         resolver: zodResolver(insertUserSchema),
@@ -61,6 +77,10 @@ export default function Register() {
 
     const onSubmit = (data: InsertUser) => {
         setError("");
+        if (data.phone) {
+            const digits = data.phone.replace(/\D/g, "");
+            data.phone = digits ? `${phoneCode} ${digits}` : data.phone;
+        }
         registerMutation.mutate(data);
     };
 
@@ -123,16 +143,31 @@ export default function Register() {
                             <FormField
                                 control={form.control}
                                 name="phone"
+                                rules={{
+                                    validate: (value) => validateLocalPhone(phoneCode, value as string),
+                                }}
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Phone Number (Optional)</FormLabel>
                                         <FormControl>
-                                            <Input
-                                                type="tel"
-                                                placeholder="+1234567890"
-                                                {...field}
-                                                value={field.value || ""}
-                                            />
+                                            <div className="flex gap-2">
+                                                <Select value={phoneCode} onValueChange={setPhoneCode}>
+                                                    <SelectTrigger className="w-28">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="+92" className="text-foreground">+92</SelectItem>
+                                                        <SelectItem value="+91" className="text-foreground">+91</SelectItem>
+                                                        <SelectItem value="+1" className="text-foreground">+1</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <Input
+                                                    type="tel"
+                                                    placeholder="300 1234567"
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                />
+                                            </div>
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
