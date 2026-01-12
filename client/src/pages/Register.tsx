@@ -3,15 +3,25 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { insertUserSchema, type InsertUser } from "@shared/schema";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PhoneNumberInput } from "@/components/shared/PhoneNumberInput";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Droplet, AlertCircle } from "lucide-react";
+import { UserRole } from "@/types";
+
+const registerFormSchema = z.object({
+	firstName: z.string().min(1, "First name is required"),
+	lastName: z.string().min(1, "Last name is required"),
+	email: z.string().email("Invalid email address"),
+	password: z.string().min(6, "Password must be at least 6 characters"),
+	phone: z.string().optional(),
+});
+
+type RegisterFormValues = z.infer<typeof registerFormSchema>;
 
 export default function Register() {
     const [, setLocation] = useLocation();
@@ -33,23 +43,29 @@ export default function Register() {
         }
     };
 
-    const form = useForm<InsertUser>({
-        resolver: zodResolver(insertUserSchema),
+    const form = useForm<RegisterFormValues>({
+        resolver: zodResolver(registerFormSchema),
         defaultValues: {
+            firstName: "",
+            lastName: "",
             email: "",
             password: "",
-            name: "",
-            role: "donor",
             phone: "",
         },
     });
 
     const registerMutation = useMutation({
-        mutationFn: async (data: InsertUser) => {
+        mutationFn: async (data: RegisterFormValues) => {
             const response = await fetch("/api/auth/register", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
+                body: JSON.stringify({
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    email: data.email,
+                    password: data.password,
+                    phoneNo: data.phone,
+                }),
                 credentials: "include",
             });
 
@@ -65,7 +81,7 @@ export default function Register() {
             localStorage.setItem("user", JSON.stringify(data.user));
 
             // Redirect based on role
-            if (data.user.role === "admin") {
+            if (data.user.role === UserRole.ADMIN) {
                 setLocation("/admin");
             } else {
                 setLocation("/");
@@ -76,7 +92,7 @@ export default function Register() {
         },
     });
 
-    const onSubmit = (data: InsertUser) => {
+    const onSubmit = (data: RegisterFormValues) => {
         setError("");
         if (data.phone) {
             const digits = data.phone.replace(/\D/g, "");
@@ -111,12 +127,26 @@ export default function Register() {
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                             <FormField
                                 control={form.control}
-                                name="name"
+                                name="firstName"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Full Name</FormLabel>
+                                        <FormLabel>First Name</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="John Doe" {...field} />
+                                            <Input placeholder="John" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="lastName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Last Name</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Doe" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -176,28 +206,6 @@ export default function Register() {
                                                 {...field}
                                             />
                                         </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="role"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Account Type</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select account type" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="donor">Donor</SelectItem>
-                                                <SelectItem value="hospital">Hospital</SelectItem>
-                                            </SelectContent>
-                                        </Select>
                                         <FormMessage />
                                     </FormItem>
                                 )}

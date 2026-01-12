@@ -11,9 +11,8 @@ export class DonationsService {
             include: {
                 donor: {
                     include: {
-                        user: {
-                            include: { city: true },
-                        },
+                        user: true,
+                        city: true,
                     },
                 },
                 request: {
@@ -44,9 +43,8 @@ export class DonationsService {
                 include: {
                     donor: {
                         include: {
-                            user: {
-                                include: { city: true },
-                            },
+                            user: true,
+                            city: true,
                         },
                     },
                     request: {
@@ -90,8 +88,8 @@ export class DonationsService {
                     name: `${donor.user.firstName} ${donor.user.lastName}`.trim(),
                     email: donor.user.email,
                     phone: donor.user.phoneNo,
-                    bloodGroup: donor.user.bloodGroup,
-                    city: donor.user.city?.name || '',
+                    bloodGroup: donor.bloodGroup,
+                    city: donor.city?.name || '',
                 }
                 : null,
             // Include nested request info

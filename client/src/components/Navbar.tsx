@@ -13,6 +13,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserRole } from "@/types";
 
 export function Navbar() {
     const [location, setLocation] = useLocation();
@@ -48,7 +49,7 @@ export function Navbar() {
 
     // If an admin is authenticated on the login route, push them to the admin dashboard
     useEffect(() => {
-        if (isAuthenticated && user?.role === "admin" && location === "/login") {
+        if (isAuthenticated && user?.role === UserRole.ADMIN && location === "/login") {
             setLocation("/admin");
         }
     }, [isAuthenticated, user, location, setLocation]);
@@ -59,59 +60,61 @@ export function Navbar() {
                 <div className="flex justify-between h-16">
                     {/* Logo and Desktop Navigation */}
                     <div className="flex items-center">
-                        <Link href="/">
-                            <a className="flex items-center">
-                                <div className="flex items-center gap-2 cursor-pointer">
-                                    <div className="p-2 bg-red-100 rounded-lg">
-                                        <Droplet className="h-6 w-6 text-red-600" />
-                                    </div>
-                                    <span className="text-xl font-bold text-gray-900">BloodConnect</span>
+                        <Link href="/" className="flex items-center">
+                            <div className="flex items-center gap-2 cursor-pointer">
+                                <div className="p-2 bg-red-100 rounded-lg">
+                                    <Droplet className="h-6 w-6 text-red-600" />
                                 </div>
-                            </a>
+                                <span className="text-xl font-bold text-gray-900">BloodConnect</span>
+                            </div>
                         </Link>
 
                         {/* Desktop Navigation Links */}
                         <div className="hidden md:ml-8 md:flex md:space-x-4">
                             {/* On admin routes (for admin users), show only admin menu */}
-                            {isAuthenticated && user?.role === "admin" && isAdminRoute
+                            {isAuthenticated && user?.role === UserRole.ADMIN && isAdminRoute
                                 ? adminNavigation.map((item) => (
-                                      <button
-                                          key={item.name}
-                                          onClick={() => setLocation(item.href)}
-                                          className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive(item.href)
-                                              ? "text-red-600 bg-red-50"
-                                              : "text-gray-700 hover:text-red-600 hover:bg-red-50"
-                                              }`}
-                                      >
-                                          {item.name}
-                                      </button>
-                                  ))
+                                    <button
+                                        key={item.name}
+                                        onClick={() => setLocation(item.href)}
+                                        className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive(item.href)
+                                            ? "text-red-600 bg-red-50"
+                                            : "text-gray-700 hover:text-red-600 hover:bg-red-50"
+                                            }`}
+                                    >
+                                        {item.name}
+                                    </button>
+                                ))
                                 : navigation.map((item) => (
-                                      <button
-                                          key={item.name}
-                                          onClick={() => {
-                                              if (item.href === "/register-donor") {
-                                                  if (location !== "/") {
-                                                      setLocation("/");
-                                                  }
-                                                  openDonorModal();
-                                              } else if (item.href === "/request-blood") {
-                                                  if (location !== "/") {
-                                                      setLocation("/");
-                                                  }
-                                                  openRequestModal();
-                                              } else {
-                                                  setLocation(item.href);
-                                              }
-                                          }}
-                                          className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive(item.href)
-                                              ? "text-red-600 bg-red-50"
-                                              : "text-gray-700 hover:text-red-600 hover:bg-red-50"
-                                              }`}
-                                      >
-                                          {item.name}
-                                      </button>
-                                  ))}
+                                    <button
+                                        key={item.name}
+                                        onClick={() => {
+                                            if (item.href === "/register-donor") {
+                                                if (!isAuthenticated) {
+                                                    setLocation("/login");
+                                                    return;
+                                                }
+                                                if (location !== "/") {
+                                                    setLocation("/");
+                                                }
+                                                openDonorModal();
+                                            } else if (item.href === "/request-blood") {
+                                                if (location !== "/") {
+                                                    setLocation("/");
+                                                }
+                                                openRequestModal();
+                                            } else {
+                                                setLocation(item.href);
+                                            }
+                                        }}
+                                        className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive(item.href)
+                                            ? "text-red-600 bg-red-50"
+                                            : "text-gray-700 hover:text-red-600 hover:bg-red-50"
+                                            }`}
+                                    >
+                                        {item.name}
+                                    </button>
+                                ))}
                         </div>
                     </div>
 
@@ -119,7 +122,7 @@ export function Navbar() {
                     <div className="flex items-center gap-4">
                         {isAuthenticated && user ? (
                             <>
-                                {user.role === "admin" && !isAdminRoute && (
+                                {user.role === UserRole.ADMIN && !isAdminRoute && (
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -148,7 +151,7 @@ export function Navbar() {
                                             </div>
                                         </DropdownMenuLabel>
                                         <DropdownMenuSeparator />
-                                        {user.role === "admin" && !isAdminRoute && (
+                                        {user.role === UserRole.ADMIN && !isAdminRoute && (
                                             <>
                                                 <DropdownMenuItem
                                                     onClick={() => setLocation("/admin")}
@@ -204,34 +207,31 @@ export function Navbar() {
             {mobileMenuOpen && (
                 <div className="md:hidden border-t">
                     <div className="px-2 pt-2 pb-3 space-y-1">
-                        {(isAuthenticated && user?.role === "admin" && isAdminRoute
+                        {(isAuthenticated && user?.role === UserRole.ADMIN && isAdminRoute
                             ? adminNavigation
                             : navigation
                         ).map((item) => (
-                            <Link key={item.name} href={item.href}>
-                                <a
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    className={`block px-3 py-2 rounded-md text-base font-medium ${isActive(item.href)
-                                        ? "text-red-600 bg-red-50"
-                                        : "text-gray-700 hover:text-red-600 hover:bg-red-50"
-                                        }`}
-                                >
-                                    {item.name}
-                                </a>
+                            <Link
+                                key={item.name}
+                                href={item.href}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className={`block px-3 py-2 rounded-md text-base font-medium ${isActive(item.href)
+                                    ? "text-red-600 bg-red-50"
+                                    : "text-gray-700 hover:text-red-600 hover:bg-red-50"}`}
+                            >
+                                {item.name}
                             </Link>
                         ))}
                         {isAuthenticated && user ? (
-                            <>
-                                <button
-                                    onClick={() => {
-                                        handleLogout();
-                                        setMobileMenuOpen(false);
-                                    }}
-                                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-red-600 hover:bg-red-50"
-                                >
-                                    Logout
-                                </button>
-                            </>
+                            <button
+                                onClick={() => {
+                                    handleLogout();
+                                    setMobileMenuOpen(false);
+                                }}
+                                className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-red-600 hover:bg-red-50"
+                            >
+                                Logout
+                            </button>
                         ) : (
                             <>
                                 <button

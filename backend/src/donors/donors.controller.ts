@@ -6,10 +6,14 @@ import {
     Body,
     Param,
     ConflictException,
+    UseGuards,
+    Req,
 } from '@nestjs/common';
 import { DonorsService } from './donors.service';
-import { CreateDonorDto, UpdateApprovalDto } from './dto';
+import { CreateDonorDto, UpdateApprovalDto, CreateDonorForUserDto } from './dto';
 import { BloodRequestsService } from '../blood-requests/blood-requests.service';
+import { AuthGuard } from '@nestjs/passport';
+import type { Request } from 'express';
 
 @Controller('donors')
 export class DonorsController {
@@ -41,6 +45,20 @@ export class DonorsController {
         }
 
         return this.donorsService.create(createDonorDto);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Post('me')
+    async createForCurrentUser(
+        @Body() dto: CreateDonorForUserDto,
+        @Req() req: Request,
+    ) {
+        const user = req.user as { userId: string } | undefined;
+        if (!user?.userId) {
+            throw new ConflictException('User information not found in request');
+        }
+
+        return this.donorsService.createForUser(user.userId, dto);
     }
 
     @Patch(':id/approval')

@@ -15,19 +15,15 @@ import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { BloodGroup } from "@/types";
 import { BLOOD_GROUP_OPTIONS, bloodGroupDisplay } from "@/lib/enum-utils";
+import { useAuth } from "@/lib/auth";
 import { z } from "zod";
 
 // Form validation schema
 const donorFormSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().optional(),
+  phone: z.string().min(1, "Phone number is required"),
+  whatsappNumber: z.string().optional(),
   bloodGroup: z.nativeEnum(BloodGroup, { errorMap: () => ({ message: "Please select a blood group" }) }),
   city: z.string().min(2, "City is required"),
-  batch: z.string().optional(),
-  whatsappNumber: z.string().optional(),
-  lastDonationDate: z.date().optional(),
-  password: z.string().min(6, "Password must be at least 6 characters").optional(),
 });
 
 type DonorFormData = z.infer<typeof donorFormSchema>;
@@ -39,6 +35,7 @@ interface DonorRegistrationProps {
 export default function DonorRegistration({ variant = "page" }: DonorRegistrationProps) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isSuccess, setIsSuccess] = useState(false);
   const [phoneCode, setPhoneCode] = useState("+92");
   const [whatsappCode, setWhatsappCode] = useState("+92");
@@ -61,21 +58,16 @@ export default function DonorRegistration({ variant = "page" }: DonorRegistratio
   const form = useForm<DonorFormData>({
     resolver: zodResolver(donorFormSchema),
     defaultValues: {
-      name: "",
-      email: "",
       phone: "",
+      whatsappNumber: "",
       bloodGroup: undefined,
       city: "",
-      batch: "",
-      whatsappNumber: "",
-      lastDonationDate: undefined,
-      password: "donor123", // Default password for registration
     },
   });
 
   const registerMutation = useMutation({
     mutationFn: async (data: DonorFormData) => {
-      return await apiRequest("POST", "/api/donors", data);
+      return await apiRequest("POST", "/api/donors/me", data);
     },
     onSuccess: () => {
       setIsSuccess(true);
@@ -85,9 +77,21 @@ export default function DonorRegistration({ variant = "page" }: DonorRegistratio
       });
     },
     onError: (error: Error) => {
+      const message = error.message || "Registration failed";
+      const lower = message.toLowerCase();
+
+      if (lower.includes("already") && lower.includes("donor")) {
+        toast({
+          title: "Already registered as donor",
+          description: "You are already registered as a blood donor.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
-        title: "Registration Failed",
-        description: error.message,
+        title: "Registration failed",
+        description: "Something went wrong while registering you as a donor. Please try again.",
         variant: "destructive",
       });
     },
@@ -95,20 +99,26 @@ export default function DonorRegistration({ variant = "page" }: DonorRegistratio
 
   const onSubmit = (data: DonorFormData) => {
     const phoneDigits = (data.phone || "").replace(/\D/g, "");
-    const phone = phoneDigits ? `${phoneCode} ${phoneDigits}` : data.phone;
+    const phone = `${phoneCode} ${phoneDigits}`;
 
     let whatsappNumber = data.whatsappNumber;
     if (data.whatsappNumber) {
       const whatsappDigits = data.whatsappNumber.replace(/\D/g, "");
-      whatsappNumber = whatsappDigits ? `${whatsappCode} ${whatsappDigits}` : data.whatsappNumber;
+      whatsappNumber = whatsappDigits ? `${whatsappCode} ${whatsappDigits}` : undefined;
     }
 
     registerMutation.mutate({
-      ...data,
       phone,
       whatsappNumber,
+      bloodGroup: data.bloodGroup,
+      city: data.city,
     });
   };
+
+  if (!user) {
+    navigate("/login");
+    return null;
+  }
 
   if (isSuccess) {
     const content = (
@@ -186,58 +196,59 @@ export default function DonorRegistration({ variant = "page" }: DonorRegistratio
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Name/email/password are taken from the logged-in user, so we only ask for contact and donor-specific info here */}
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="phone"
+                  rules={{
+                    validate: (value: string | undefined) => validateLocalPhone(phoneCode, value || ""),
+                  }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Full Name *</FormLabel>
+                      <FormLabel>Phone Number *</FormLabel>
                       <FormControl>
-                        <Input placeholder="John Doe" {...field} data-testid="input-name" />
+                        <PhoneNumberInput
+                          code={phoneCode}
+                          onCodeChange={setPhoneCode}
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          inputTestId="input-phone"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email *</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="john@example.com" {...field} data-testid="input-email" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    rules={{
-                      validate: (value: string | undefined) => validateLocalPhone(phoneCode, value || ""),
-                    }}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone Number *</FormLabel>
-                        <FormControl>
-                          <PhoneNumberInput
-                            code={phoneCode}
-                            onCodeChange={setPhoneCode}
-                            value={field.value || ""}
-                            onChange={field.onChange}
-                            inputTestId="input-phone"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="whatsappNumber"
+                  rules={{
+                    validate: (value) => {
+                      const val = value as string | undefined;
+                      if (!val) return true;
+                      const digits = val.replace(/\D/g, "");
+                      if (!digits) return true;
+                      return validateLocalPhone(whatsappCode, val as string);
+                    },
+                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>WhatsApp Number (Optional)</FormLabel>
+                      <FormControl>
+                        <PhoneNumberInput
+                          code={whatsappCode}
+                          onCodeChange={setWhatsappCode}
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          inputTestId="input-whatsapp"
+                        />
+                      </FormControl>
+                      <FormDescription>For quick contact</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
@@ -283,79 +294,6 @@ export default function DonorRegistration({ variant = "page" }: DonorRegistratio
                     )}
                   />
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="batch"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Batch (Optional)</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g., 2024"
-                            {...field}
-                            value={field.value ?? ""}
-                            data-testid="input-batch"
-                          />
-                        </FormControl>
-                        <FormDescription>Your graduation year or batch</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="whatsappNumber"
-                    rules={{
-                      validate: (value) => {
-                        const val = value as string | undefined;
-                        if (!val) return true;
-                        const digits = val.replace(/\D/g, "");
-                        if (!digits) return true;
-                        return validateLocalPhone(whatsappCode, val as string);
-                      },
-                    }}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>WhatsApp Number (Optional)</FormLabel>
-                        <FormControl>
-                          <PhoneNumberInput
-                            code={whatsappCode}
-                            onCodeChange={setWhatsappCode}
-                            value={field.value || ""}
-                            onChange={field.onChange}
-                            inputTestId="input-whatsapp"
-                          />
-                        </FormControl>
-                        <FormDescription>For quick contact</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="lastDonationDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Donation Date (Optional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                          value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
-                          onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
-                          data-testid="input-last-donation"
-                        />
-                      </FormControl>
-                      <FormDescription>If you have donated before</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 <div className="pt-4">
                   <Button

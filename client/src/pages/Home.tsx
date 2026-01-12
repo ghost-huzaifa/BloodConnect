@@ -5,12 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { BloodAvailabilityCard } from "@/components/BloodAvailabilityCard";
 import { ActiveRequestCard } from "@/components/ActiveRequestCard";
 import { Droplet, Users, Heart, TrendingUp } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import type { BloodInventory, BloodRequest, PublicStats } from "@/types";
 import DonorRegistration from "@/pages/DonorRegistration";
 import RequestBlood from "@/pages/RequestBlood";
 import { AppDialog } from "@/components/shared/AppDialog";
 import { useUiDialogs } from "@/lib/ui-dialogs";
+import { useAuth } from "@/lib/auth";
 
 import { BloodGroup } from "@/types";
 import { BLOOD_GROUPS, bloodGroupDisplay } from "@/lib/enum-utils";
@@ -18,6 +19,7 @@ import { BLOOD_GROUPS, bloodGroupDisplay } from "@/lib/enum-utils";
 const BLOOD_GROUP_DISPLAY = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
 export default function Home() {
+  const [, setLocation] = useLocation();
   const {
     showDonorModal,
     showRequestModal,
@@ -26,6 +28,7 @@ export default function Home() {
     closeDonorModal,
     closeRequestModal,
   } = useUiDialogs();
+  const { isAuthenticated } = useAuth();
 
   const { data: inventory, isLoading: inventoryLoading } = useQuery<BloodInventory[]>({
     queryKey: ["/api/blood-inventory"],
@@ -38,6 +41,20 @@ export default function Home() {
   const { data: stats } = useQuery<PublicStats>({
     queryKey: ["/api/stats/public"],
   });
+
+  // Wire dialog close events from inner components
+  useEffect(() => {
+    const handleCloseDonor = () => closeDonorModal();
+    const handleCloseRequest = () => closeRequestModal();
+
+    window.addEventListener("close-register-donor", handleCloseDonor);
+    window.addEventListener("close-request-blood", handleCloseRequest);
+
+    return () => {
+      window.removeEventListener("close-register-donor", handleCloseDonor);
+      window.removeEventListener("close-request-blood", handleCloseRequest);
+    };
+  }, [closeDonorModal, closeRequestModal]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -58,7 +75,13 @@ export default function Home() {
                 size="lg"
                 className="w-full sm:w-auto"
                 data-testid="button-register-donor"
-                onClick={openDonorModal}
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    setLocation("/login");
+                    return;
+                  }
+                  openDonorModal();
+                }}
               >
                 <Users className="w-5 h-5 mr-2" />
                 Register as Donor
@@ -201,7 +224,13 @@ export default function Home() {
           <Button
             size="lg"
             data-testid="button-join-now"
-            onClick={openDonorModal}
+            onClick={() => {
+              if (!isAuthenticated) {
+                setLocation("/login");
+                return;
+              }
+              openDonorModal();
+            }}
           >
             <Heart className="w-5 h-5 mr-2" />
             Join Now

@@ -40,8 +40,7 @@ export enum ContactMethod {
 
 export enum UserRole {
     ADMIN = 'ADMIN',
-    DONOR = 'DONOR',
-    REQUESTER = 'REQUESTER',
+    NORMAL_USER = 'NORMAL_USER',
 }
 
 // Type definitions matching backend responses

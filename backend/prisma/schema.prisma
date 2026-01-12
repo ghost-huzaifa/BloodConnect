@@ -49,27 +49,21 @@ enum ContactMethod {
 
 enum UserRole {
   ADMIN
-  DONOR
-  REQUESTER
+  NORMAL_USER
 }
 
 // ============== MODELS ==============
 
 model User {
   userId           String        @id @default(uuid())
-  email            String        @unique
-  phoneNo          String?       @unique
-  password         String
   firstName        String
   lastName         String
-  preferredContact ContactMethod @default(WHATSAPP)
-  bloodGroup       BloodGroup
-  role             UserRole      @default(DONOR)
+  email            String        @unique
+  password         String
+  phoneNo          String?       @unique
+  role             UserRole      @default(NORMAL_USER)
 
   isActive Boolean @default(true)
-
-  cityId String
-  city   City   @relation(fields: [cityId], references: [cityId])
 
   requests Request[]
   donor    Donor?
@@ -85,6 +79,12 @@ model Donor {
   totalDonations         Int            @default(0)
   approvalStatus         ApprovalStatus @default(PENDING)
   whatsappNumber         String?
+
+  bloodGroup       BloodGroup
+  preferredContact ContactMethod @default(WHATSAPP)
+
+  cityId String
+  city   City   @relation(fields: [cityId], references: [cityId])
 
   userId String @unique
   user   User   @relation(fields: [userId], references: [userId], onDelete: Cascade)
@@ -102,7 +102,7 @@ model City {
   stateId String?
   state   State?  @relation(fields: [stateId], references: [stateId])
 
-  users    User[]
+  donors   Donor[]
   requests Request[]
 }
 

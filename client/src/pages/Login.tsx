@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Droplet, AlertCircle } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { UserRole } from "@/types";
 
 export default function Login() {
     const [, setLocation] = useLocation();
@@ -45,8 +46,8 @@ export default function Login() {
             // Update auth context and localStorage
             login(data.user);
 
-            // Redirect based on role
-            if (data.user.role === "admin") {
+            // Redirect based on role from new backend (UserRole enum)
+            if (data.user.role === UserRole.ADMIN) {
                 setLocation("/admin");
             } else {
                 setLocation("/");

@@ -1,12 +1,13 @@
 import { ReactNode } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
+import { UserRole } from "@/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield } from "lucide-react";
 
 interface ProtectedRouteProps {
     children: ReactNode;
-    allowedRoles?: Array<"admin" | "donor" | "hospital">;
+    allowedRoles?: Array<UserRole>;
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {

@@ -19,6 +19,7 @@ import RequestManager from "@/pages/RequestManager";
 import CaseLog from "@/pages/CaseLog";
 import NotFound from "@/pages/not-found";
 import { UiDialogProvider } from "@/lib/ui-dialogs";
+import { UserRole } from "@/types";
 
 // Wrapper components for routes so we don't pass router props to dialog variants
 const DonorRegistrationPage = () => <DonorRegistration />;
@@ -44,7 +45,7 @@ function AdminRouter() {
   };
 
   return (
-    <ProtectedRoute allowedRoles={["admin"]}>
+    <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
       <SidebarProvider style={style as React.CSSProperties}>
         <main className="min-h-screen bg-background">
           <Switch>

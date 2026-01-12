@@ -1,25 +1,19 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-
-interface User {
-    id: string;
-    email: string;
-    name: string;
-    role: "admin" | "donor" | "hospital";
-}
+import type { AuthUser } from "@/types";
 
 interface AuthContextType {
-    user: User | null;
+    user: AuthUser | null;
     isLoading: boolean;
     isAuthenticated: boolean;
     logout: () => void;
-    login: (user: User) => void;
+    login: (user: AuthUser) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<AuthUser | null>(null);
 
     // Try to get user from localStorage on mount
     useEffect(() => {
@@ -34,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     // Verify user with backend
-    const { data, isLoading } = useQuery<User>({
+    const { data, isLoading } = useQuery<AuthUser>({
         queryKey: ["/api/auth/me"],
         retry: false,
         enabled: !!user, // Only fetch if we have a local user
@@ -54,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem("user");
     };
 
-    const login = (newUser: User) => {
+    const login = (newUser: AuthUser) => {
         setUser(newUser);
         localStorage.setItem("user", JSON.stringify(newUser));
     };

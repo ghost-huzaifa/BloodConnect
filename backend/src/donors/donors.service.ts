@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateDonorDto, UpdateApprovalDto } from './dto';
+import { CreateDonorDto, UpdateApprovalDto, CreateDonorForUserDto } from './dto';
 import {
     BloodGroup,
     ApprovalStatus,
@@ -22,9 +22,8 @@ export class DonorsService {
     async findAll() {
         const donors = await this.prisma.donor.findMany({
             include: {
-                user: {
-                    include: { city: true },
-                },
+                user: true,
+                city: true,
             },
             orderBy: { createdAt: 'desc' },
         });
@@ -36,9 +35,8 @@ export class DonorsService {
         const donor = await this.prisma.donor.findUnique({
             where: { donorId },
             include: {
-                user: {
-                    include: { city: true },
-                },
+                user: true,
+                city: true,
             },
         });
 
@@ -62,22 +60,19 @@ export class DonorsService {
         const donors = await this.prisma.donor.findMany({
             where: {
                 approvalStatus: ApprovalStatus.APPROVED,
-                user: {
-                    bloodGroup,
-                    ...(city && {
-                        city: {
-                            name: {
-                                contains: city,
-                                mode: 'insensitive',
-                            },
+                bloodGroup,
+                ...(city && {
+                    city: {
+                        name: {
+                            contains: city,
+                            mode: 'insensitive',
                         },
-                    }),
-                },
+                    },
+                }),
             },
             include: {
-                user: {
-                    include: { city: true },
-                },
+                user: true,
+                city: true,
             },
         });
 
@@ -130,11 +125,7 @@ export class DonorsService {
                     firstName,
                     lastName,
                     phoneNo: createDonorDto.phone,
-                    bloodGroup: createDonorDto.bloodGroup,
-                    preferredContact:
-                        createDonorDto.preferredContact || ContactMethod.WHATSAPP,
-                    cityId: city.cityId,
-                    role: UserRole.DONOR,
+                    role: UserRole.NORMAL_USER,
                 },
             });
 
@@ -142,12 +133,15 @@ export class DonorsService {
                 data: {
                     userId: user.userId,
                     whatsappNumber: createDonorDto.whatsappNumber,
+                    bloodGroup: createDonorDto.bloodGroup,
+                    preferredContact:
+                        createDonorDto.preferredContact || ContactMethod.WHATSAPP,
+                    cityId: city.cityId,
                     approvalStatus: ApprovalStatus.PENDING,
                 },
                 include: {
-                    user: {
-                        include: { city: true },
-                    },
+                    user: true,
+                    city: true,
                 },
             });
 
@@ -157,6 +151,63 @@ export class DonorsService {
         return this.transformDonor(result);
     }
 
+    async createForUser(userId: string, dto: CreateDonorForUserDto) {
+        const user = await this.prisma.user.findUnique({
+            where: { userId },
+            include: { donor: true },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        if (user.donor) {
+            throw new ConflictException('User is already registered as a donor');
+        }
+
+        // Find or create city
+        let city = await this.prisma.city.findFirst({
+            where: {
+                name: {
+                    equals: dto.city,
+                    mode: 'insensitive',
+                },
+            },
+        });
+
+        if (!city) {
+            city = await this.prisma.city.create({
+                data: { name: dto.city },
+            });
+        }
+
+        const donor = await this.prisma.$transaction(async (tx) => {
+            await tx.user.update({
+                where: { userId },
+                data: { phoneNo: dto.phone },
+            });
+
+            return tx.donor.create({
+                data: {
+                    userId,
+                    whatsappNumber: dto.whatsappNumber,
+                    bloodGroup: dto.bloodGroup,
+                    preferredContact: dto.whatsappNumber
+                        ? ContactMethod.WHATSAPP
+                        : ContactMethod.PHONE,
+                    cityId: city.cityId,
+                    approvalStatus: ApprovalStatus.PENDING,
+                },
+                include: {
+                    user: true,
+                    city: true,
+                },
+            });
+        });
+
+        return this.transformDonor(donor);
+    }
+
     async updateApproval(donorId: string, updateApprovalDto: UpdateApprovalDto) {
         const donor = await this.prisma.donor.update({
             where: { donorId },
@@ -164,9 +215,8 @@ export class DonorsService {
                 approvalStatus: updateApprovalDto.approvalStatus,
             },
             include: {
-                user: {
-                    include: { city: true },
-                },
+                user: true,
+                city: true,
             },
         });
 
@@ -180,9 +230,8 @@ export class DonorsService {
             name: `${donor.user.firstName} ${donor.user.lastName}`.trim(),
             email: donor.user.email,
             phone: donor.user.phoneNo,
-            bloodGroup: donor.user.bloodGroup,
-            city: donor.user.city?.name || '',
-            batch: null, // Legacy field
+            bloodGroup: donor.bloodGroup,
+            city: donor.city?.name || '',
             lastDonationDate: donor.lastDonated,
             approvalStatus: donor.approvalStatus,
             whatsappNumber: donor.whatsappNumber,

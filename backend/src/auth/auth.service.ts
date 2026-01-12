@@ -39,10 +39,7 @@ export class AuthService {
                 firstName: registerDto.firstName,
                 lastName: registerDto.lastName,
                 phoneNo: registerDto.phoneNo,
-                bloodGroup: registerDto.bloodGroup,
-                preferredContact: registerDto.preferredContact,
-                cityId: registerDto.cityId,
-                role: UserRole.DONOR,
+                role: UserRole.NORMAL_USER,
             },
         });
 
@@ -93,7 +90,7 @@ export class AuthService {
     async getProfile(userId: string) {
         const user = await this.prisma.user.findUnique({
             where: { userId },
-            include: { donor: true, city: true },
+            include: { donor: true },
         });
 
         if (!user) {
@@ -121,7 +118,6 @@ export class AuthService {
             firstName: user.firstName,
             lastName: user.lastName,
             role: user.role,
-            bloodGroup: user.bloodGroup,
             isActive: user.isActive,
         };
     }
